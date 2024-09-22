@@ -1,53 +1,81 @@
-#Join me at telegram @dev_gagan
-
+import sys
 from pyrogram import Client
-
-from telethon.sessions import StringSession
 from telethon.sync import TelegramClient
+from config import API_ID, API_HASH, BOT_TOKEN, DEFAULT_SESSION
 
-from decouple import config
-import logging, time, sys
+# Initialize uvloop if you plan to use it
+# import uvloop
+# uvloop.install()
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logging.getLogger("pyrogram").setLevel(logging.WARNING)
-logging.getLogger("telethon").setLevel(logging.WARNING)
+device = "Telegram Android 10.11.1"
+
+# Module-level variables for the clients
+Bot = None
+modi = None
+sigma = None
+defaultbot = None
+bot = None
+
+# Function to start Pyrogram clients
+def start_pyrogram_client(name, bot_token, api_id, api_hash, device, max_concurrent_transmissions=20):
+    try:
+        client = Client(
+            name,
+            bot_token=bot_token,
+            api_id=int(api_id),
+            api_hash=api_hash,
+            device_model=device,
+            sleep_threshold=20,
+            max_concurrent_transmissions=max_concurrent_transmissions,
+            workers=50 if name == "clientone" else 10  # Customize workers for 'clientone'
+        )
+        client.start()
+        return client
+    except Exception as e:
+        print(f"Error starting Pyrogram client {name}: {e}")
+        sys.exit(1)
+
+# Function to start Telethon clients
+def start_telethon_client(name, api_id, api_hash, bot_token=None):
+    try:
+        if bot_token:
+            client = TelegramClient(name, api_id, api_hash).start(bot_token=bot_token)
+        else:
+            client = TelegramClient(name, api_id, api_hash)
+        return client
+    except Exception as e:
+        print(f"Error starting Telethon client {name}: {e}")
+        sys.exit(1)
 
 
-# variables
-API_ID = "27945805"
-API_HASH = "ddc35a5f93c79c257d3cceafd3d97d2f"
-BOT_TOKEN = "7003513788:AAGcKClYLeU_E3Xekm2AmHGjFpaXi9AtE88"
-SESSION = "BQGqa00AFfzR9_NvtxJWXHDSpN7PAqZTxTAnPdDsr9y41pg_nB1U1QGymFEAL6g3y6FEatD8xsMcyEMjNOMEe7sSTISweLZIMfnjl88rBer9-2YOcs8A7Gk8-eBaic8167ccjerPAWwP9zlBd5e4qB2HtY_uiaCOF66SnyX3UbOkYTV632pVKMPQAdMfk88_wHPrZqJAMzxOgZ74DUxiXs-OWgN4dZ_RHwHkwNeHO8AldRFkcYXcoMw6kg6wViekwi42mIU79Vyc8XzRisVFBb-ZiTCQXYUbDpEuZgXubVbpCytYHo-d8m3NAhqg8i0e4dkX5E_xcQslevQMlSWer5Y605vpVgAAAAFpU1rjAA"
-FORCESUB = "noobankitcoder"
-AUTH = "6441456023"
-SUDO_USERS = []
+# Function to start the defaultbot using session string
+def start_defaultbot(session_string, api_id, api_hash):
+    try:
+        client = Client(
+            "defaultbot",
+            api_id=int(api_id),
+            api_hash=api_hash,
+            session_string=session_string
+        )
+        client.start()
+        return client
+    except Exception as e:
+        print(f"Error starting defaultbot: {e}")
+        sys.exit(1)
+        
+# Start all clients
+def start_all_clients():
+    global Bot, modi, sigma, defaultbot, bot  # Access global variables
 
-if len(AUTH) != 0:
-    SUDO_USERS = {int(AUTH.strip()) for AUTH in AUTH.split()}
-else:
-    SUDO_USERS = set()
+    # Start Pyrogram clients
+    Bot = start_pyrogram_client("clientone", BOT_TOKEN, API_ID, API_HASH, device, 20)
+    modi = start_pyrogram_client("modiji", BOT_TOKEN, API_ID, API_HASH, device, 10)
+    sigma = start_pyrogram_client("sigma", BOT_TOKEN, API_ID, API_HASH, device, 10)
+    defaultbot = start_defaultbot(DEFAULT_SESSION, API_ID, API_HASH)
 
-bot = TelegramClient('bot', API_ID, API_HASH).start(bot_token=BOT_TOKEN) 
+    # Start Telethon clients
+    bot = start_telethon_client('sexypne', API_ID, API_HASH, BOT_TOKEN)
 
-userbot = Client("myacc",api_id=API_ID,api_hash=API_HASH,session_string=SESSION)
-
-try:
-    userbot.start()
-except BaseException:
-    print("Your session expired please re add that... thanks @dev_gagan.")
-    sys.exit(1)
-
-Bot = Client(
-    "SaveRestricted",
-    bot_token=BOT_TOKEN,
-    api_id=int(API_ID),
-    api_hash=API_HASH
-)    
-
-try:
-    Bot.start()
-except Exception as e:
-    #print(e)
-    logger.info(e)
-    sys.exit(1)
+# Initialize clients when the module is imported
+start_all_clients()
+        
